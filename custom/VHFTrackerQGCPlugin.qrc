@@ -6,7 +6,7 @@
         <file alias="LineMapItem.qml">src/LineMapItem.qml</file>
     </qresource>
 	<qresource prefix="/res">
-        <file alias="PaintedDogsLogo.png">resources/PaintedDogsLogo.png</file>
+        <file alias="STELogo.png">resources/STELogo.png</file>
 	</qresource>
     <qresource prefix="/json">
         <file alias="VHFTracker.SettingsGroup.json">src/VHFTracker.SettingsGroup.json</file>

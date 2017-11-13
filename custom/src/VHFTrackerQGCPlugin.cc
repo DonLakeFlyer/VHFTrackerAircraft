@@ -33,12 +33,12 @@ void VHFTrackerQGCPlugin::setToolbox(QGCToolbox* toolbox)
 
 QString VHFTrackerQGCPlugin::brandImageIndoor(void) const
 {
-    return QStringLiteral("/res/PaintedDogsLogo.png");
+    return QStringLiteral("/res/STELogo.png");
 }
 
 QString VHFTrackerQGCPlugin::brandImageOutdoor(void) const
 {
-    return QStringLiteral("/res/PaintedDogsLogo.png");
+    return QStringLiteral("/res/STELogo.png");
 }
 
 QVariantList& VHFTrackerQGCPlugin::settingsPages(void)
