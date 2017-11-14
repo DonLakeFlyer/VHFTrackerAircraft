@@ -97,5 +97,5 @@ void QGCPositionManager::_error(QGeoPositionInfoSource::Error positioningError)
 
 void QGCPositionManager::_updateTimeout(void)
 {
-    qWarning() << "QGCPositionManager updateTimeout";
+    //qWarning() << "QGCPositionManager updateTimeout";
 }

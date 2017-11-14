@@ -18,6 +18,49 @@ import QGroundControl.FlightMap     1.0
 import QGroundControl.Palette       1.0
 
 /// Instrument panel shown when virtual thumbsticks are visible
+Item {
+    id:             root
+    width:          ScreenTools.isTinyScreen ? getPreferredInstrumentWidth() * 1.5 : getPreferredInstrumentWidth()
+    height:         _valuesWidget.height
+
+    property var    _qgcView:           qgcView
+    property real   _innerRadius:       (width - (_topBottomMargin * 3)) / 4
+    property real   _outerRadius:       _innerRadius + _topBottomMargin
+    property real   _defaultSize:       ScreenTools.defaultFontPixelHeight * (9)
+    property real   _sizeRatio:         ScreenTools.isTinyScreen ? (width / _defaultSize) * 0.5 : width / _defaultSize
+    property real   _bigFontSize:       ScreenTools.defaultFontPointSize * 2.5  * _sizeRatio
+    property real   _normalFontSize:    ScreenTools.defaultFontPointSize * 1.5  * _sizeRatio
+    property real   _labelFontSize:     ScreenTools.defaultFontPointSize * 0.75 * _sizeRatio
+    property real   _spacing:           ScreenTools.defaultFontPixelHeight * 0.33
+    property real   _topBottomMargin:   (width * 0.05) / 2
+    property real   _availableValueHeight: maxHeight - (root.height + _valuesItem.anchors.topMargin)
+    property var    _activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
+
+    QGCPalette { id: qgcPal }
+
+    Item {
+        id:                 _valuesItem
+        width:              parent.width
+        height:             _valuesWidget.height
+
+        Rectangle {
+            anchors.fill:   _valuesWidget
+            color:          qgcPal.window
+        }
+
+        PageView {
+            id:                 _valuesWidget
+            anchors.margins:    1
+            anchors.left:       parent.left
+            anchors.right:      parent.right
+            qgcView:            root._qgcView
+            maxHeight:          _availableValueHeight
+        }
+    }
+}
+
+/*
+/// Instrument panel shown when virtual thumbsticks are visible
 Rectangle {
     id:             root
     width:          ScreenTools.isTinyScreen ? getPreferredInstrumentWidth() * 1.5 : getPreferredInstrumentWidth()
@@ -82,3 +125,4 @@ Rectangle {
         }
     }
 }
+*/

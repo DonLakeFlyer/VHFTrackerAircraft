@@ -297,30 +297,11 @@ FlightMap {
 
     MapScale {
         id:                     mapScale
-        anchors.right:          parent.right
+        anchors.horizontalCenter:   parent.horizontalCenter
         anchors.margins:        ScreenTools.defaultFontPixelHeight * (0.33)
-        anchors.topMargin:      ScreenTools.defaultFontPixelHeight * (0.33) + state === "bottomMode" ? 0 : ScreenTools.toolbarHeight
         anchors.bottomMargin:   ScreenTools.defaultFontPixelHeight * (0.33)
+        anchors.bottom:             parent.bottom
         mapControl:             flightMap
         visible:                !ScreenTools.isTinyScreen
-        state:                  "bottomMode"
-        states: [
-            State {
-                name:   "topMode"
-                AnchorChanges {
-                    target:                 mapScale
-                    anchors.top:            parent.top
-                    anchors.bottom:         undefined
-                }
-            },
-            State {
-                name:   "bottomMode"
-                AnchorChanges {
-                    target:                 mapScale
-                    anchors.top:            undefined
-                    anchors.bottom:         parent.bottom
-                }
-            }
-        ]
     }
 }

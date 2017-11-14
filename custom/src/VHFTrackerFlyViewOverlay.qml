@@ -11,6 +11,7 @@ import QtQuick              2.3
 import QtQuick.Layouts      1.2
 import QtQuick.Controls     1.2
 import QtPositioning        5.2
+import QtBluetooth          5.2
 
 import QGroundControl                   1.0
 import QGroundControl.Controls          1.0
@@ -28,96 +29,108 @@ Item {
 
     readonly property string scaleState: "topMode"
 
-    property var    _corePlugin:        QGroundControl.corePlugin
-    property real   _margins:           ScreenTools.defaultFontPixelWidth
-    property int    _pulseCount:        0
-    property int    _pulseStrength:     0
-    property int    _bpm:               _corePlugin.bpm
+    property var    _corePlugin:            QGroundControl.corePlugin
+    property real   _margins:               ScreenTools.defaultFontPixelWidth
+    property int    _pulseCountLeft:        0
+    property int    _pulseCountRight:       0
+    property int    _pulseStrengthLeft:     0
+    property int    _pulseStrengthRight:    0
 
-    Connections {
-        target: QGroundControl.corePlugin
+    BluetoothSocket {
+        id:         btSocket
+        service:    BluetoothService {
+            id:                 btService
+            serviceProtocol:    BluetoothService.RfcommProtocol
+            deviceAddress:      "B8:27:EB:F3:4F:9D"
+        }
 
-        onBeepStrengthChanged: {
-            _pulseCount++
-            _pulseStrength = beepStrength
+        connected:  true
+        
+        onErrorChanged: console.log("Socket error", error)
+
+        onStringDataChanged: {
+            var pulseStrengthStr
+            var pulseStr = stringData
+            if (pulseStr.startsWith("left ")) {
+                pulseStrengthStr = pulseStr.substring(5, 100)
+                _pulseCountLeft++
+                _pulseStrengthLeft = parseFloat(pulseStrengthStr)
+            } else if (pulseStr.startsWith("right ")) {
+                pulseStrengthStr = pulseStr.substring(6, 100)
+                _pulseCountRight++
+                _pulseStrengthRight = parseFloat(pulseStrengthStr)
+            }
         }
     }
 
-    Rectangle {
-        anchors.topMargin:      _margins
-        anchors.leftMargin:     ScreenTools.defaultFontPixelWidth * 10
-        anchors.rightMargin:    ScreenTools.defaultFontPixelWidth * 30
-        anchors.top:            parent.top
-        anchors.left:           parent.left
-        anchors.right:          parent.right
-        height:                 valueColumn.y +  valueColumn.height + _margins
-        color:                  "white"
+    Component {
+        id: signalStrengthControl
 
-        Column {
-            id:                 valueColumn
-            anchors.margins:    _margins
-            anchors.top:        parent.top
-            anchors.right:      parent.right
+        Rectangle {
+            width:  ScreenTools.defaultFontPixelHeight * 4
+            color:  "white"
 
-            QGCLabel {
-                anchors.horizontalCenter:   parent.horizontalCenter
-                width:                      (ScreenTools.defaultFontPixelWidth * ScreenTools.largeFontPointRatio) * 4
-                horizontalAlignment:        Text.AlignHCenter
-                text:                       _corePlugin.beepStrength
-                color:                      "black"
-                font.pointSize:             ScreenTools.largeFontPointSize
-            }
-
-            Row {
-                spacing: _margins
+            Column {
+                id:                 valueColumn
+                anchors.margins:    _margins
+                anchors.left:       parent.left
+                anchors.right:      parent.right
 
                 QGCLabel {
-                    text:                       _bpm
+                    anchors.horizontalCenter:   parent.horizontalCenter
+                    text:                       pulseStrength
                     color:                      "black"
                     font.pointSize:             ScreenTools.largeFontPointSize
                 }
 
                 QGCLabel {
-                    text:                       _pulseCount
+                    anchors.horizontalCenter:   parent.horizontalCenter
+                    text:                       pulseCount
                     color:                      "black"
                 }
             }
-        }
-
-        Rectangle {
-            anchors.margins:        _margins
-            anchors.left:           parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.right:          valueColumn.left
-            height:                 ScreenTools.defaultFontPixelHeight * 2
-            border.color:           "green"
 
             Rectangle {
-                anchors.margins:        1
-                anchors.rightMargin:    _rightMargin
-                anchors.fill:           parent
-                color:                  "green"
+                anchors.margins:            _margins
+                anchors.horizontalCenter:   parent.horizontalCenter
+                anchors.top:                valueColumn.bottom
+                anchors.bottom:             parent.bottom
+                width:                      ScreenTools.defaultFontPixelHeight * 2
+                border.color:               "green"
 
-                property real   _maximumPulse:   600
-                property real   _value:         _pulseStrength
-                property real   _rightMargin:   (parent.width - 2) - ((parent.width - 2) * (Math.min(_pulseStrength, _maximumPulse) / _maximumPulse))
+                Rectangle {
+                    anchors.margins:        1
+                    anchors.bottomMargin:   _bottomMargin
+                    anchors.fill:           parent
+                    color:                  "green"
 
-                on_ValueChanged: pulseResetTimer.start()
-
-                Behavior on _value {
-                    PropertyAnimation {
-                        duration:       250
-                        easing.type:    Easing.InOutQuad
-                    }
-                }
-
-                Timer {
-                    id:             pulseResetTimer
-                    interval:       500
-                    repeat:         false
-                    onTriggered:    _pulseStrength = 0
+                    property real   _maximumPulse:   600
+                    property real   _value:         pulseStrength
+                    property real   _bottomMargin:  (parent.height - 2) - ((parent.height - 2) * (Math.min(pulseStrength, _maximumPulse) / _maximumPulse))
                 }
             }
         }
+    }
+
+    Loader {
+        anchors.margins:    _margins
+        anchors.left:       parent.left
+        anchors.top:        parent.top
+        anchors.bottom:     parent.bottom
+        sourceComponent:    signalStrengthControl
+
+        property int pulseStrength: _pulseStrengthLeft
+        property int pulseCount:    _pulseCountLeft
+    }
+
+    Loader {
+        anchors.margins:    _margins
+        anchors.right:      parent.right
+        anchors.top:        parent.top
+        anchors.bottom:     parent.bottom
+        sourceComponent:    signalStrengthControl
+
+        property int pulseStrength: _pulseStrengthRight
+        property int pulseCount:    _pulseCountRight
     }
 }

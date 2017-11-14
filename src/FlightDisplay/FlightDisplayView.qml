@@ -238,7 +238,7 @@ QGCView {
             height:         !_mainIsMap ? _panel.height : _pipSize * (9/16)
             anchors.left:   _panel.left
             anchors.bottom: _panel.bottom
-            visible:        QGroundControl.videoManager.hasVideo && (!_mainIsMap || _isPipVisible)
+            visible:        false//QGroundControl.videoManager.hasVideo && (!_mainIsMap || _isPipVisible)
             states: [
                 State {
                     name:   "pipMode"
@@ -329,7 +329,7 @@ QGCView {
             qgcView:            root
             useLightColors:     isBackgroundDark
             missionController:  _missionController
-            visible:            singleVehicleView.checked && !QGroundControl.videoManager.fullScreen
+            visible:            false //singleVehicleView.checked && !QGroundControl.videoManager.fullScreen
         }
 
         //-------------------------------------------------------------------------
@@ -432,7 +432,7 @@ QGCView {
         }
 
         ToolStrip {
-            visible:            (_activeVehicle ? _activeVehicle.guidedModeSupported : true) && !QGroundControl.videoManager.fullScreen
+            visible:            false//(_activeVehicle ? _activeVehicle.guidedModeSupported : true) && !QGroundControl.videoManager.fullScreen
             id:                 toolStrip
             anchors.leftMargin: ScreenTools.defaultFontPixelWidth
             anchors.left:       _panel.left
