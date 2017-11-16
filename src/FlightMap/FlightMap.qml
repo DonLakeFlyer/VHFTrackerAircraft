@@ -45,7 +45,7 @@ Map {
     readonly property real  maxZoomLevel: 20
 
     property var    _activeVehicle:                 QGroundControl.multiVehicleManager.activeVehicle
-    property var    activeVehicleCoordinate:        _activeVehicle ? _activeVehicle.coordinate : QtPositioning.coordinate()
+    property var    activeVehicleCoordinate:        QGroundControl.qgcPositionManager.position
 
     function setVisibleRegion(region) {
         // This works around a bug on Qt where if you set a visibleRegion and then the user moves or zooms the map
@@ -115,22 +115,5 @@ Map {
     Connections {
         target:             QGroundControl.settingsManager.flightMapSettings.mapProvider
         onRawValueChanged:  updateActiveMapType()
-    }
-
-    /// Ground Station location
-    MapQuickItem {
-        anchorPoint.x:  sourceItem.width / 2
-        anchorPoint.y:  sourceItem.height / 2
-        visible:        gcsPosition.isValid
-        coordinate:     gcsPosition
-
-        sourceItem: Image {
-            source:         "/res/QGCLogoFull"
-            mipmap:         true
-            antialiasing:   true
-            fillMode:       Image.PreserveAspectFit
-            height:         ScreenTools.defaultFontPixelHeight * 1.75
-            sourceSize.height: height
-        }
     }
 } // Map

@@ -15,6 +15,7 @@ QGCPositionManager::QGCPositionManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
     , _updateInterval(0)
     , _currentSource(nullptr)
+    , _heading(0)
 {
 
 }
@@ -48,6 +49,20 @@ void QGCPositionManager::_positionUpdated(const QGeoPositionInfo &update)
 {
     emit lastPositionUpdated(update.isValid(), QVariant::fromValue(update.coordinate()));
     emit positionInfoUpdated(update);
+
+    if (update.isValid()) {
+        _position = update.coordinate();
+        emit positionChanged(_position);
+        if (_lastPosition.isValid()) {
+            if (_lastPosition.distanceTo(_position) > 5) {
+                _heading = _lastPosition.azimuthTo(_position);
+                emit headingChanged(_heading);
+                _lastPosition = _position;
+            }
+        } else {
+            _lastPosition = _position;
+        }
+    }
 }
 
 int QGCPositionManager::updateInterval() const
@@ -82,7 +97,7 @@ void QGCPositionManager::setPositionSource(QGCPositionManager::QGCPositionSource
     if (_currentSource != nullptr) {
         _updateInterval = _currentSource->minimumUpdateInterval();
         _currentSource->setPreferredPositioningMethods(QGeoPositionInfoSource::SatellitePositioningMethods);
-        _currentSource->setUpdateInterval(_updateInterval);
+        _currentSource->setUpdateInterval(100);
         connect(_currentSource, &QGeoPositionInfoSource::positionUpdated,       this, &QGCPositionManager::_positionUpdated);
         connect(_currentSource, &QGeoPositionInfoSource::updateTimeout,         this, &QGCPositionManager::_updateTimeout);
         connect(_currentSource, SIGNAL(error(QGeoPositionInfoSource::Error)),   this, SLOT(_error(QGeoPositionInfoSource::Error)));

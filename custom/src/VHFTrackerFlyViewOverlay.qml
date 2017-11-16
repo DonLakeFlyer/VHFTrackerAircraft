@@ -35,6 +35,16 @@ Item {
     property int    _pulseCountRight:       0
     property int    _pulseStrengthLeft:     0
     property int    _pulseStrengthRight:    0
+    property color  _pulseColorLeft:        _strongPulseColor
+    property color  _pulseColorRight:       _strongPulseColor
+    property bool   _trackingLeftTurn:      false
+    property bool   _trackingRightTurn:     false
+    property int    _trackStrongestPulse:   0
+    property real   _trackStrongestHeading: 0
+    property real   _vehicleHeading:        QGroundControl.qgcPositionManager.heading
+
+    readonly property color _strongPulseColor:  "green"
+    readonly property color _weakPulseColor:    "red"
 
     BluetoothSocket {
         id:         btSocket
@@ -51,6 +61,7 @@ Item {
         onStringDataChanged: {
             var pulseStrengthStr
             var pulseStr = stringData
+
             if (pulseStr.startsWith("left ")) {
                 pulseStrengthStr = pulseStr.substring(5, 100)
                 _pulseCountLeft++
@@ -62,6 +73,77 @@ Item {
             }
         }
     }
+
+    function _updateSignalColors() {
+        if (_pulseStrengthLeft > _pulseStrengthRight) {
+            _pulseColorLeft = _strongPulseColor
+            _pulseColorRight = _weakPulseColor
+        } else {
+            _pulseColorLeft = _weakPulseColor
+            _pulseColorRight = _strongPulseColor
+        }
+    }
+
+    function _startTracking() {
+        _trackStrongestHeading = 0
+        _trackStrongestPulse = 0
+    }
+
+    function _updateTurnTracking(pulseStrength) {
+        if (pulseStrength > _trackStrongestPulse) {
+            _trackStrongestHeading = _vehicleHeading
+            _trackStrongestPulse = pulseStrength
+        }
+        trackStrongHeadingLabel.text = "Heading: " + _trackStrongestHeading.toFixed(0) + "  Pulse: " + _trackStrongestPulse
+    }
+
+    function setGain(gain) {
+        btSocket.stringData = "gain " + gain + "\n"
+    }
+
+    function setFrequency(freq) {
+        btSocket.stringData = "freq " + freq + "\n"
+    }
+
+    function setAmp(amp) {
+        btSocket.stringData = "amp " + amp + "\n"
+    }
+
+    on_PulseStrengthLeftChanged: {
+        _updateSignalColors()
+        if (_trackingLeftTurn) {
+            _updateTurnTracking(_pulseStrengthLeft)
+        }
+    }
+
+    on_PulseStrengthRightChanged: {
+        _updateSignalColors()
+        if (_trackingRightTurn) {
+            _updateTurnTracking(_pulseStrengthRight)
+        }
+    }
+
+/*
+    SequentialAnimation on _pulseStrengthLeft {
+        loops: Animation.Infinite
+
+        NumberAnimation {
+            from: 0
+            to: 600
+            duration: 20000
+        }
+    }
+
+    SequentialAnimation on _pulseStrengthRight {
+        loops: Animation.Infinite
+
+        NumberAnimation {
+            from: 600
+            to: 0
+            duration: 20000
+        }
+    }
+*/
 
     Component {
         id: signalStrengthControl
@@ -96,13 +178,13 @@ Item {
                 anchors.top:                valueColumn.bottom
                 anchors.bottom:             parent.bottom
                 width:                      ScreenTools.defaultFontPixelHeight * 2
-                border.color:               "green"
+                border.color:               pulseColor
 
                 Rectangle {
                     anchors.margins:        1
                     anchors.bottomMargin:   _bottomMargin
                     anchors.fill:           parent
-                    color:                  "green"
+                    color:                  pulseColor
 
                     property real   _maximumPulse:   600
                     property real   _value:         pulseStrength
@@ -113,6 +195,7 @@ Item {
     }
 
     Loader {
+        id:                 leftPulseIndicator
         anchors.margins:    _margins
         anchors.left:       parent.left
         anchors.top:        parent.top
@@ -121,9 +204,11 @@ Item {
 
         property int pulseStrength: _pulseStrengthLeft
         property int pulseCount:    _pulseCountLeft
+        property color pulseColor:  _pulseColorLeft
     }
 
     Loader {
+        id:                 rightPulseIndicator
         anchors.margins:    _margins
         anchors.right:      parent.right
         anchors.top:        parent.top
@@ -132,5 +217,113 @@ Item {
 
         property int pulseStrength: _pulseStrengthRight
         property int pulseCount:    _pulseCountRight
+        property color pulseColor:  _pulseColorRight
+    }
+
+    QGCLabel {
+        id:                         trackStrongHeadingLabel
+        anchors.horizontalCenter:   parent.horizontalCenter
+        font.pointSize:             ScreenTools.largeFontPointSize * 2
+        color:                      "white"
+    }
+
+    QGCButton {
+        anchors.leftMargin: _margins
+        anchors.left:       leftPulseIndicator.right
+        anchors.bottom:     leftPulseIndicator.bottom
+        pointSize:          ScreenTools.largeFontPointSize
+        text:               _trackingLeftTurn ? "Stop Tracking" : "Track Left Turn"
+        enabled:            !_trackingRightTurn
+
+        onClicked: {
+            _trackingLeftTurn = !_trackingLeftTurn
+            _startTracking()
+        }
+    }
+
+    QGCButton {
+        id:                     rightTurnButton
+        anchors.rightMargin:    _margins
+        anchors.right:          rightPulseIndicator.left
+        anchors.bottom:         rightPulseIndicator.bottom
+        pointSize:              ScreenTools.largeFontPointSize
+        text:                   _trackingRightTurn ? "Stop Tracking" : "Track Right Turn"
+        enabled:                !_trackingLeftTurn
+
+        onClicked: {
+            _trackingRightTurn = !_trackingRightTurn
+            _startTracking()
+        }
+    }
+
+    /*
+    QGCButton {
+        anchors.leftMargin: _margins
+        anchors.left:       leftPulseIndicator.right
+        anchors.top:        leftPulseIndicator.bottom
+        pointSize:          ScreenTools.largeFontPointSize
+        text:               _nullTracking ? "Stop Tracking" : "Null Tracking"
+        enabled:            !_trackingRightTurn
+
+        onClicked: {
+            _trackingLeftTurn = !_trackingLeftTurn
+            _startTracking()
+        }
+    }*/
+
+    ColumnLayout {
+        anchors.rightMargin:    _margins
+        anchors.bottomMargin:   ScreenTools.defaultFontPixelHeight * 2
+        anchors.right:          rightPulseIndicator.left
+        anchors.top:            rightPulseIndicator.top
+        anchors.bottom:         rightTurnButton.top
+        spacing:                _margins
+
+        QGCLabel {
+            color:              "white"
+            text:               "Gain"
+            Layout.alignment:   Qt.AlignHCenter
+        }
+
+        QGCLabel {
+            color:              "white"
+            text:               gainSlider.value
+            font.pointSize:     ScreenTools.largeFontPointSize
+            Layout.alignment:   Qt.AlignHCenter
+        }
+
+        Slider {
+            id:                         gainSlider
+            anchors.bottom:             parent.bottom
+            minimumValue:               1
+            maximumValue:               50
+            value:                      1
+            orientation:                Qt.Vertical
+            updateValueWhileDragging:   false
+            stepSize:                   1
+            Layout.fillHeight:          true
+            Layout.alignment:           Qt.AlignHCenter
+
+            onValueChanged: setGain(value)
+        }
+    }
+
+    QGCTextField {
+        id:                 freqField
+        anchors.leftMargin: _margins
+        anchors.left:       leftPulseIndicator.right
+        anchors.top:        leftPulseIndicator.top
+        font.pointSize:     ScreenTools.largeFontPointSize
+        text:               "146000000"
+
+        onEditingFinished: setFrequency(parseInt(text))
+    }
+
+    QGCCheckBox {
+        anchors.topMargin:  _margins
+        anchors.left:       freqField.left
+        anchors.top:        freqField.bottom
+        text:               "Amplifier"
+        onClicked:          setAmp(checked ? 1 : 0)
     }
 }

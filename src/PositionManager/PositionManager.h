@@ -24,6 +24,9 @@ public:
     QGCPositionManager(QGCApplication* app, QGCToolbox* toolbox);
     ~QGCPositionManager();
 
+    Q_PROPERTY(QGeoCoordinate   position    MEMBER _position    NOTIFY positionChanged)
+    Q_PROPERTY(double           heading     MEMBER _heading     NOTIFY headingChanged)
+
     enum QGCPositionSource {
         Simulated,
         GPS,
@@ -44,10 +47,16 @@ private slots:
 signals:
     void lastPositionUpdated(bool valid, QVariant lastPosition);
     void positionInfoUpdated(QGeoPositionInfo update);
+    void positionChanged(QGeoCoordinate position);
+    void headingChanged(double heading);
 
 private:
     int _updateInterval;
     QGeoPositionInfoSource * _currentSource;
     QGeoPositionInfoSource * _defaultSource;
     QGeoPositionInfoSource * _simulatedSource;
+
+    QGeoCoordinate  _position;
+    QGeoCoordinate  _lastPosition;
+    double          _heading;
 };

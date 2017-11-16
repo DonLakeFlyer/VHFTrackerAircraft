@@ -48,12 +48,23 @@ FlightMap {
     property var    _geoFenceController:        _planMasterController.geoFenceController
     property var    _rallyPointController:      _planMasterController.rallyPointController
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
-    property var    _activeVehicleCoordinate:   _activeVehicle ? _activeVehicle.coordinate : QtPositioning.coordinate()
+    property var    _lastActiveVehicleCoordinate:   QtPositioning.coordinate()
+    property var    _activeVehicleCoordinate:   QGroundControl.qgcPositionManager.position
+    property real   _activeVehicleHeading:      QGroundControl.qgcPositionManager.heading
     property var    _gotoHereCoordinate:        QtPositioning.coordinate()
     property real   _toolButtonTopMargin:       parent.height - ScreenTools.availableHeight + (ScreenTools.defaultFontPixelHeight / 2)
 
     property bool   _disableVehicleTracking:    false
     property bool   _keepVehicleCentered:       _mainIsMap ? false : true
+
+    on_ActiveVehicleCoordinateChanged: {
+        if (_lastActiveVehicleCoordinate.isValid) {
+            if (_lastActiveVehicleCoordinate.distanceTo(_activeVehicleCoordinate) > 5) {
+                _activeVehicleHeading = _lastActiveVehicleCoordinate.azimuthTo(_activeVehicleCoordinate)
+                _lastActiveVehicleCoordinate = _activeVehicleCoordinate
+            }
+        }
+    }
 
     // Track last known map position and zoom from Fly view in settings
     onZoomLevelChanged: QGroundControl.flightMapZoom = zoomLevel
@@ -178,17 +189,12 @@ FlightMap {
         }
     }
 
-    // Add the vehicles to the map
-    MapItemView {
-        model: QGroundControl.multiVehicleManager.vehicles
-
-        delegate: VehicleMapItem {
-            vehicle:        object
-            coordinate:     object.coordinate
-            map:            flightMap
-            size:           _mainIsMap ? ScreenTools.defaultFontPixelHeight * 3 : ScreenTools.defaultFontPixelHeight
-            z:              QGroundControl.zOrderVehicles
-        }
+    VehicleMapItem {
+        coordinate:     _activeVehicleCoordinate
+        heading:        _activeVehicleHeading
+        map:            flightMap
+        size:           _mainIsMap ? ScreenTools.defaultFontPixelHeight * 3 : ScreenTools.defaultFontPixelHeight
+        z:              QGroundControl.zOrderVehicles
     }
 
     // Add ADSB vehicles to the map
@@ -271,7 +277,7 @@ FlightMap {
             index:      -1
             label:      qsTr("Goto here", "Goto here waypoint")
         }
-    }    
+    }
 
     // Camera trigger points
     MapItemView {
