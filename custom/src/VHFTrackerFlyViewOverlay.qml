@@ -51,6 +51,7 @@ Item {
         service:    BluetoothService {
             id:                 btService
             serviceProtocol:    BluetoothService.RfcommProtocol
+            serviceUuid:        "94f39d29-7d6d-437d-973b-fba39e49d4ee"
             deviceAddress:      "B8:27:EB:F3:4F:9D"
         }
 
@@ -74,6 +75,16 @@ Item {
         }
     }
 
+    /*
+    BluetoothDiscoveryModel {
+        remoteAddress: "B8:27:EB:F3:4F:9D"
+        discoveryMode: BluetoothDiscoveryModel.FullServiceDiscovery
+
+        onErrorChanged: console.log("Discover error", error)
+        onDeviceDiscovered: console.log("device discovered", device)
+        onServiceDiscovered: console.log("service discovered", service.serviceUuid)
+    }*/
+
     function _updateSignalColors() {
         if (_pulseStrengthLeft > _pulseStrengthRight) {
             _pulseColorLeft = _strongPulseColor
@@ -86,27 +97,56 @@ Item {
 
     function _startTracking() {
         _trackStrongestHeading = 0
-        _trackStrongestPulse = 0
+        _trackStrongestPulse = -1
+        if (_trackingLeftTurn) {
+            _updateTurnTracking(_pulseStrengthLeft)
+        }
+        if (_trackingRightTurn) {
+            _updateTurnTracking(_pulseStrengthRight)
+        }
     }
 
     function _updateTurnTracking(pulseStrength) {
         if (pulseStrength > _trackStrongestPulse) {
-            _trackStrongestHeading = _vehicleHeading
+            var newHeading = _vehicleHeading
+            if (_trackingLeftTurn) {
+                newHeading += 90.0
+            } else {
+                newHeading -= 90.0
+            }
+            console.log("newheading", newHeading)
+            _trackStrongestHeading = normalizeHeading(newHeading)
+            console.log("newheading", newHeading)
             _trackStrongestPulse = pulseStrength
         }
         trackStrongHeadingLabel.text = "Heading: " + _trackStrongestHeading.toFixed(0) + "  Pulse: " + _trackStrongestPulse
     }
 
     function setGain(gain) {
-        btSocket.stringData = "gain " + gain + "\n"
+        if (btSocket.connected) {
+            btSocket.stringData = "gain " + gain + "\n"
+        }
     }
 
     function setFrequency(freq) {
-        btSocket.stringData = "freq " + freq + "\n"
+        if (btSocket.connected) {
+            btSocket.stringData = "freq " + freq + "\n"
+        }
     }
 
     function setAmp(amp) {
-        btSocket.stringData = "amp " + amp + "\n"
+        if (btSocket.connected) {
+            btSocket.stringData = "amp " + amp + "\n"
+        }
+    }
+
+    function normalizeHeading(heading) {
+        if (heading < 0) {
+            heading += 360.0
+        } else if (heading >= 360) {
+            heading -= 360.0
+        }
+        return heading
     }
 
     on_PulseStrengthLeftChanged: {
